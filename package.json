@@ -1,0 +1,20 @@
+{
+  "name": "webautoma-backend",
+  "version": "1.0.0",
+  "description": "Webautoma Backend Handler , Handles Browser Automation and Proxy Chaining",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "WebAutoma"
+  ],
+  "author": "Muhammad Saif",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.3",
+    "puppeteer": "^13.6.0",
+    "puppeteer-extra": "^3.2.3",
+    "puppeteer-extra-plugin-stealth": "^2.9.0"
+  }
+}
