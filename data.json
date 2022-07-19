@@ -11,7 +11,7 @@
     "task_id":1,
     "task_data":[
         {
-            "selector":"input[name='username1']",
+            "selector":"input[name='username']",
             "selector_type":"input",
             "value":"umar.sani@lbpv.ng",
             "proirty":1
