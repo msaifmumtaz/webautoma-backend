@@ -184,6 +184,7 @@ async function main(access_token) {
 
             // console.log(taskdata);
         }
+        var logs=await Promise.all(logs);
 
     }
 }
@@ -192,6 +193,6 @@ async function main(access_token) {
     while (true) {
         var maincall = await main(access_token);
     }
-    var logs=await Promise.all(maincall);
+    // var logs=await Promise.all(maincall);
 
 })()
