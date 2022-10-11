@@ -103,7 +103,7 @@ async function getTotalTasks(access_token_use, project_id,apiurl) {
     }
 }
 
-async function taskProcess(task, access_token, proxy, args,apiurl) {
+async function taskProcess(task, access_token, proxy_url, args,apiurl) {
     if (task) {
         let puperr;
         const browser = await puppeteer.launch(args).catch(err => {
@@ -186,6 +186,7 @@ async function taskProcess(task, access_token, proxy, args,apiurl) {
 
             // console.log(logs);
             await browser.close();
+            await proxyChain.closeAnonymizedProxy(proxy_url, true);
             return logs;
             // console.log(`All done, check the screenshot. ✨`)
         } catch (error) {
@@ -206,6 +207,8 @@ async function main(access_token, project, proxy,apiurl) {
                 if (proxy.is_proxy_auth === 'yes') {
                     var orproxyurl=`http://${p_username}:${p_password}@${proxy_url}`;
                     proxy_url = await proxyChain.anonymizeProxy(orproxyurl);
+                }else{
+                    proxy_url = await proxyChain.anonymizeProxy(proxy_url);
                 }
                 var args = {
                     args: [`--proxy-server=${proxy_url}`,`--no-sandbox`],
@@ -219,7 +222,7 @@ async function main(access_token, project, proxy,apiurl) {
                 }
             }
             var task = await getTaskData(project, access_token,apiurl);
-            let task_logs = await taskProcess(task, access_token, proxy, args,apiurl);
+            let task_logs = await taskProcess(task, access_token, proxy_url, args,apiurl);
             return task_logs;
         }
 
