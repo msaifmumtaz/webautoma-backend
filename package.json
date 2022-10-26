@@ -16,6 +16,7 @@
     "proxy-chain": "^2.1.0",
     "puppeteer": "^13.6.0",
     "puppeteer-extra": "^3.2.3",
-    "puppeteer-extra-plugin-stealth": "^2.9.0"
+    "puppeteer-extra-plugin-stealth": "^2.9.0",
+    "user-agents": "^1.0.1179"
   }
 }

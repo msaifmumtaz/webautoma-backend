@@ -1,9 +1,24 @@
 const puppeteer = require('puppeteer-extra');
+const userAgentLib = require("user-agents");
 const axios = require('axios');
 const access_token = 'd0c6e78050da4f11b85bc92aeb21887d';
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 const apiurl="http://webautoma.pk/api/";
+
+
+function getUserAgent(){
+    const deviceTypes=Array('mobile','desktop');
+    Array.prototype.random = function () {
+        return this[Math.floor((Math.random()*this.length))];
+      }
+    var device_category= deviceTypes.random();
+    user = new userAgentLib({ 
+        deviceCategory: device_category 
+    });
+
+    return user.toString();
+}
 
 /**
  * Get Active Project Return Project Data of Currently
@@ -114,6 +129,7 @@ async function taskProcess(task, access_token, proxy, args,apiurl) {
         try {
             console.log('Running Task Of Project..')
             const page = await browser.newPage();
+            await page.setUserAgent(getUserAgent());
             if (proxy.is_proxy_auth === 'yes') {
 
                 await page.authenticate({

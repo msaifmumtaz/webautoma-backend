@@ -7,6 +7,23 @@ puppeteer.use(StealthPlugin());
 const apiurl="https://webautoma.com/api/";
 
 /**
+ * Get Random User Agent
+ * @returns {string} Random UserAgent
+ */
+function getUserAgent(){
+    const deviceTypes=Array('mobile','desktop');
+    Array.prototype.random = function () {
+        return this[Math.floor((Math.random()*this.length))];
+      }
+    var device_category= deviceTypes.random();
+    user = new userAgentLib({ 
+        deviceCategory: device_category 
+    });
+
+    return user.toString();
+}
+
+/**
  * Get Active Project Return Project Data of Currently
  * Processing Status.
  * @param {string} access_token_use 
@@ -115,6 +132,7 @@ async function taskProcess(task, access_token, proxy_url, args,apiurl) {
         try {
             console.log('Running Task Of Project..')
             const page = await browser.newPage();
+            await page.setUserAgent(getUserAgent());
             await page.goto(task.project_url, {
                 waitUntil: 'networkidle2',
             })
@@ -234,12 +252,16 @@ async function main(access_token, project, proxy,apiurl) {
     while (lop) {
         const delay = ms => new Promise(res => setTimeout(res, ms));
         let project = await getActiveProject(access_token,apiurl);
+        var [minDelay, maxDelay] = project.task_delay.split('-');
+        minDelay= parseInt(minDelay)*1000;
+        maxDelay= parseInt(maxDelay)*1000;
+        var task_delay= Math.floor(Math.random() * (maxDelay - minDelay + 1) + minDelay);
         if (project) {
             var proxy = await getproxy(access_token, project.id,apiurl);
             if (proxy && proxy != 'error') {
                 let mainCall = await main(access_token, project.id,proxy,apiurl);
                 await Promise.all(Object.keys(mainCall));
-                await delay(project.task_delay);
+                await delay(task_delay);
             }
         }
 
