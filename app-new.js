@@ -1,26 +1,27 @@
 const puppeteer = require('puppeteer-extra');
+const userAgentLib = require("user-agents");
 const axios = require('axios');
 const proxyChain = require('proxy-chain');
 const access_token = 'd0c6e78050da4f11b85bc92aeb21887d';
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
-const apiurl="https://webautoma.com/api/";
+const apiurl = "https://webautoma.com/api/";
 
 /**
  * Get Random User Agent
  * @returns {string} Random UserAgent
  */
-function getUserAgent(){
-    const deviceTypes=Array('mobile','desktop');
+function getUserAgent() {
+    const deviceTypes = Array('mobile', 'desktop');
     Array.prototype.random = function () {
-        return this[Math.floor((Math.random()*this.length))];
-      }
-    var device_category= deviceTypes.random();
-    user = new userAgentLib({ 
-        deviceCategory: device_category 
+        return this[Math.floor((Math.random() * this.length))];
+    }
+    var device_category = deviceTypes.random();
+    user = new userAgentLib({
+        deviceCategory: device_category
     });
 
-    return user.toString();
+    return { 'user_ag': user.toString(), 'device_type': device_category };
 }
 
 /**
@@ -29,9 +30,9 @@ function getUserAgent(){
  * @param {string} access_token_use 
  * @returns {object} Project Data
  */
-async function getActiveProject(access_token_use,apiurl) {
+async function getActiveProject(access_token_use, apiurl) {
     try {
-        const response = await axios.post(apiurl+'project/get', {
+        const response = await axios.post(apiurl + 'project/get', {
             access_token: access_token_use
         });
         // console.log(response.data + 'project');
@@ -49,9 +50,9 @@ async function getActiveProject(access_token_use,apiurl) {
  * @returns {object} Task Data Object
  */
 
-async function getTaskData(project_id, access_token_use,apiurl) {
+async function getTaskData(project_id, access_token_use, apiurl) {
     try {
-        const response = await axios.post(apiurl+'project/getTask', {
+        const response = await axios.post(apiurl + 'project/getTask', {
             access_token: access_token_use,
             project_id: project_id
         });
@@ -68,9 +69,9 @@ async function getTaskData(project_id, access_token_use,apiurl) {
  * @param {string} access_token_use 
  * @returns {object} Proxy Data Object
  */
-async function getproxy(access_token_use, project_id_use,apiurl) {
+async function getproxy(access_token_use, project_id_use, apiurl) {
     try {
-        const response = await axios.post(apiurl+'proxy/get', {
+        const response = await axios.post(apiurl + 'proxy/get', {
             access_token: access_token_use,
             project_id: project_id_use
         });
@@ -90,9 +91,9 @@ async function getproxy(access_token_use, project_id_use,apiurl) {
  * @param {int|string} task_id 
  * @returns {object} Update Status Message Got from Server
  */
-async function updateTaskStatus(access_token_use, status, log_msg, task_id,apiurl) {
+async function updateTaskStatus(access_token_use, status, log_msg, task_id, apiurl) {
     try {
-        const response = await axios.post(apiurl+'project/updateTaskStatus', {
+        const response = await axios.post(apiurl + 'project/updateTaskStatus', {
             access_token: access_token_use,
             task_id: task_id,
             task_status: status,
@@ -106,9 +107,9 @@ async function updateTaskStatus(access_token_use, status, log_msg, task_id,apiur
     }
 }
 
-async function getTotalTasks(access_token_use, project_id,apiurl) {
+async function getTotalTasks(access_token_use, project_id, apiurl) {
     try {
-        const response = await axios.post(apiurl+'project/getTotalTasks', {
+        const response = await axios.post(apiurl + 'project/getTotalTasks', {
             access_token: access_token_use,
             project_id: project_id,
         });
@@ -120,19 +121,20 @@ async function getTotalTasks(access_token_use, project_id,apiurl) {
     }
 }
 
-async function taskProcess(task, access_token, proxy_url, args,apiurl) {
+async function taskProcess(task, access_token, proxy_url, args, apiurl) {
     if (task) {
         let puperr;
         const browser = await puppeteer.launch(args).catch(err => {
             puperr = err
         });
         if (puperr) {
-            var logs = await updateTaskStatus(access_token, 'error', puperr.toString(), task.task_id,apiurl);
+            var logs = await updateTaskStatus(access_token, 'error', puperr.toString(), task.task_id, apiurl);
         }
         try {
             console.log('Running Task Of Project..')
+            var ua_obj = getUserAgent();
             const page = await browser.newPage();
-            await page.setUserAgent(getUserAgent());
+            await page.setUserAgent(ua_obj.user_ag);
             await page.goto(task.project_url, {
                 waitUntil: 'networkidle2',
             })
@@ -146,43 +148,44 @@ async function taskProcess(task, access_token, proxy_url, args,apiurl) {
             for (let d of task.task_data) {
                 // console.log(d);
                 await page.waitForTimeout(1000);
-
-                switch (d.input_type) {
-                    case 'input':
-                        // console.log(d.selector_type);
-                        await page.type(d.selector, d.value).catch(err => {
-                            errors = err;
-                        });
-                        break;
-                    case 'submit':
-                        await page.click(d.selector).catch(err => {
-                            errors = err;
-                        });
-                        break;
-                    case 'checkbox':
-                        await page.click(d.selector, {
-                            clickCount: 1
-                        }).catch(err => {
-                            errors = err;
-                        });
-                        break;
-                    case 'radiobtn':
-                        await page.click(d.selector, {
-                            clickCount: 1
-                        }).catch(err => {
-                            errors = err;
-                        });
-                        break;
-                    case 'select':
-                        await page.select(d.selector, d.value).catch(err => {
-                            errors = err;
-                        });
-                        break;
-                    case 'button':
-                        await page.click(d.selector).catch(err => {
-                            errors = err;
-                        });
-                        break;
+                if (d.device_type == ua_obj.device_type || d.device_type == 'both') {
+                    switch (d.input_type) {
+                        case 'input':
+                            // console.log(d.selector_type);
+                            await page.type(d.selector, d.value).catch(err => {
+                                errors = err;
+                            });
+                            break;
+                        case 'submit':
+                            await page.click(d.selector).catch(err => {
+                                errors = err;
+                            });
+                            break;
+                        case 'checkbox':
+                            await page.click(d.selector, {
+                                clickCount: 1
+                            }).catch(err => {
+                                errors = err;
+                            });
+                            break;
+                        case 'radiobtn':
+                            await page.click(d.selector, {
+                                clickCount: 1
+                            }).catch(err => {
+                                errors = err;
+                            });
+                            break;
+                        case 'select':
+                            await page.select(d.selector, d.value).catch(err => {
+                                errors = err;
+                            });
+                            break;
+                        case 'button':
+                            await page.click(d.selector).catch(err => {
+                                errors = err;
+                            });
+                            break;
+                    }
                 }
                 if (errors) {
                     console.log('Log Error BREAK.');
@@ -190,11 +193,11 @@ async function taskProcess(task, access_token, proxy_url, args,apiurl) {
                 }
             }
             if (errors) {
-                var logs = await updateTaskStatus(access_token, 'error', errors.toString(), task.task_id,apiurl);
+                var logs = await updateTaskStatus(access_token, 'error', errors.toString(), task.task_id, apiurl);
                 // var log=await Promise.all(logser);
 
             } else {
-                var logs = await updateTaskStatus(access_token, 'completed', 'Task Completed Successfully.', task.task_id,apiurl);
+                var logs = await updateTaskStatus(access_token, 'completed', 'Task Completed Successfully.', task.task_id, apiurl);
             }
             await page.waitForTimeout(15000);
             // await page.screenshot({
@@ -208,28 +211,28 @@ async function taskProcess(task, access_token, proxy_url, args,apiurl) {
             return logs;
             // console.log(`All done, check the screenshot. ✨`)
         } catch (error) {
-            var logs = await updateTaskStatus(access_token, 'error', error.toString(), task.task_id,apiurl);
+            var logs = await updateTaskStatus(access_token, 'error', error.toString(), task.task_id, apiurl);
             return logs;
         }
     }
 }
-async function main(access_token, project, proxy,apiurl) {
+async function main(access_token, project, proxy, apiurl) {
     if (project != null || project != '' || project != 0) {
         // var proxy = await getproxy();
         // console.log(proxy);
         if (proxy) {
             if (proxy.use_proxy === 'yes') {
                 var proxy_url = proxy.proxy_url;
-                var p_username=proxy.proxy_username;
-                var p_password=proxy.proxy_password;
+                var p_username = proxy.proxy_username;
+                var p_password = proxy.proxy_password;
                 if (proxy.is_proxy_auth === 'yes') {
-                    var orproxyurl=`http://${p_username}:${p_password}@${proxy_url}`;
+                    var orproxyurl = `http://${p_username}:${p_password}@${proxy_url}`;
                     proxy_url = await proxyChain.anonymizeProxy(orproxyurl);
-                }else{
+                } else {
                     proxy_url = await proxyChain.anonymizeProxy(proxy_url);
                 }
                 var args = {
-                    args: [`--proxy-server=${proxy_url}`,`--no-sandbox`],
+                    args: [`--proxy-server=${proxy_url}`, `--no-sandbox`],
                     headless: true
                 }
                 console.log('Using Proxy....');
@@ -239,8 +242,8 @@ async function main(access_token, project, proxy,apiurl) {
                     headless: true
                 }
             }
-            var task = await getTaskData(project, access_token,apiurl);
-            let task_logs = await taskProcess(task, access_token, proxy_url, args,apiurl);
+            var task = await getTaskData(project, access_token, apiurl);
+            let task_logs = await taskProcess(task, access_token, proxy_url, args, apiurl);
             return task_logs;
         }
 
@@ -248,18 +251,18 @@ async function main(access_token, project, proxy,apiurl) {
 }
 
 (async () => {
-    var lop=true;
+    var lop = true;
     while (lop) {
         const delay = ms => new Promise(res => setTimeout(res, ms));
-        let project = await getActiveProject(access_token,apiurl);
+        let project = await getActiveProject(access_token, apiurl);
         var [minDelay, maxDelay] = project.task_delay.split('-');
-        minDelay= parseInt(minDelay)*1000;
-        maxDelay= parseInt(maxDelay)*1000;
-        var task_delay= Math.floor(Math.random() * (maxDelay - minDelay + 1) + minDelay);
+        minDelay = parseInt(minDelay) * 1000;
+        maxDelay = parseInt(maxDelay) * 1000;
+        var task_delay = Math.floor(Math.random() * (maxDelay - minDelay + 1) + minDelay);
         if (project) {
-            var proxy = await getproxy(access_token, project.id,apiurl);
+            var proxy = await getproxy(access_token, project.id, apiurl);
             if (proxy && proxy != 'error') {
-                let mainCall = await main(access_token, project.id,proxy,apiurl);
+                let mainCall = await main(access_token, project.id, proxy, apiurl);
                 await Promise.all(Object.keys(mainCall));
                 await delay(task_delay);
             }
