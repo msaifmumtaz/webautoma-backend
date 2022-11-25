@@ -91,13 +91,14 @@ async function getproxy(access_token_use, project_id_use, apiurl) {
  * @param {int|string} task_id 
  * @returns {object} Update Status Message Got from Server
  */
-async function updateTaskStatus(access_token_use, status, log_msg, task_id, apiurl) {
+async function updateTaskStatus(access_token_use, status, log_msg, page_msg,task_id, apiurl) {
     try {
         const response = await axios.post(apiurl + 'project/updateTaskStatus', {
             access_token: access_token_use,
             task_id: task_id,
             task_status: status,
-            logs: log_msg
+            logs: log_msg,
+            page_message: page_msg
         });
         console.log(response.data);
         return response.data;
@@ -141,6 +142,8 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
             // await page.waitForTimeout();
             // console.log(task.task_data);
             var errors;
+            var pageMessage;
+            var m;
             await page.click('body');
             await page.waitForSelector(task.task_data[0].selector, {
                 visible: true
@@ -185,6 +188,18 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
                                 errors = err;
                             });
                             break;
+                        case 'message':
+                            m=await page.waitForSelector(d.selector, {
+                                visible: true
+                            });
+                            pageMessage=await m.evaluate(el => el.textContent);
+                            //Alert Handling Code.
+                            // page.on('dialog', async dialog => {
+                            //     console.log(dialog.message());
+                            //     await dialog.dismiss();
+                            //     });
+
+
                     }
                 }
                 if (errors) {
@@ -197,7 +212,7 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
                 // var log=await Promise.all(logser);
 
             } else {
-                var logs = await updateTaskStatus(access_token, 'completed', 'Task Completed Successfully.', task.task_id, apiurl);
+                var logs = await updateTaskStatus(access_token, 'completed', 'Task Completed Successfully.',pageMessage, task.task_id, apiurl);
             }
             await page.waitForTimeout(15000);
             // await page.screenshot({
