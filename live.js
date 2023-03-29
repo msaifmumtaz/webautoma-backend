@@ -16,7 +16,7 @@ const access_token = "d0c6e78050da4f11b85bc92aeb21887d";
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 puppeteer.use(StealthPlugin());
 
-const apiurl = "http://webautoma.pk/api/";
+const apiurl = "https://webautoma.com/api/";
 const maxWorker = 4;
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -342,71 +342,30 @@ async function mainWorker(access_token, project, proxy, apiurl) {
         }
         var args = {
           args: [`--proxy-server=${proxy_url}`, `--no-sandbox`],
-          headless: false,
+          headless: true,
         };
         console.log("Using Proxy....");
       } else {
         var args = {
           args: [`--no-sandbox`],
-          headless: false,
+          headless: true,
         };
       }
       var task = await getTaskData(project, access_token, apiurl);
-      let task_logs = await taskProcess(
-        task,
-        access_token,
-        proxy_url,
-        args,
-        apiurl
-      );
-      return task_logs;
+      if(task){
+        let task_logs = await taskProcess(
+          task,
+          access_token,
+          proxy_url,
+          args,
+          apiurl
+        );
+        return task_logs;
+      }
+
     }
   }
 }
-
-// (async () => {
-//   let projectsData = readListFromFile("data.json");
-//   if(projectsData!==null){
-//       // Keep track of the number of active workers
-//       let activeWorkers = 0;
-//       // Loop through projects
-//       while (true) {
-//           for (let project of projectsData) {
-//             console.log("running loop");
-//             console.log(activeWorkers)
-//               // Check if there are less than 4 active workers
-//                 console.log("running worker");
-//                   var [minDelay, maxDelay] = project.task_delay.split("-");
-//                   minDelay = parseInt(minDelay) * 1000;
-//                   maxDelay = parseInt(maxDelay) * 1000;
-//                   var task_delay = Math.floor(
-//                       Math.random() * (maxDelay - minDelay + 1) + minDelay
-//                   );
-//                   if (project) {
-//                     console.log("project found")
-//                       var proxy = await getproxy(access_token, project.id, apiurl);
-//                       if (proxy && proxy != "error") {
-//                         console.log("inside proxy")
-//                           // Increase active worker count
-//                           // activeWorkers++;
-//                           // Run the worker function and wait for it to complete
-//                           await mainWorker(access_token, project.id, proxy, apiurl)
-//                               .then(() => {
-//                                   // Decrease active worker count
-//                                   // activeWorkers--;
-//                                   // Sleep for the specified task delay
-//                                   delay(task_delay);
-//                               })
-//                               .catch((err) => {
-//                                   console.error(err);
-//                               });
-//                       }
-//                   }
-
-//           }
-//       }
-//   }
-// })();
 
 let runningProjects= new Set();
 async function runProject(project) {
@@ -435,7 +394,7 @@ async function runProject(project) {
     // getProjectstoData();
     // let projectsData = readListFromFile("data.json");
     let projectsData =await getActiveProject(access_token, apiurl);
-    if (projectsData !== null) {
+    if (projectsData) {
         console.log('got project data');
       // Keep track of the number of active workers
       let newProjects = new Set(projectsData.map(project => project.id));
@@ -458,62 +417,8 @@ async function runProject(project) {
       }
       await delay(1000);
       // Wait for all the promises to resolve
+    }else{
+      runningProjects.clear();
     }
   }
 })();
-
-// (async () => {
-//   let projectsData = readListFromFile("data.json");
-//   if(projectsData!==null){
-//     for (let project of projectsData) {
-//       var lop = true;
-//       while (lop) {
-//         // const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-//         var [minDelay, maxDelay] = project.task_delay.split("-");
-//         minDelay = parseInt(minDelay) * 1000;
-//         maxDelay = parseInt(maxDelay) * 1000;
-//         var task_delay = Math.floor(
-//           Math.random() * (maxDelay - minDelay + 1) + minDelay
-//         );
-//         if (project) {
-//           var proxy = await getproxy(access_token, project.id, apiurl);
-//           if (proxy && proxy != "error") {
-//             let mainCall = await mainWorker(access_token, project.id, proxy, apiurl);
-//             await Promise.all(Object.keys(mainCall));
-//             await delay(task_delay);
-//           }
-//         }
-
-//         // Promise.all(maincall);
-//       }
-//     }
-//   }
-
-// })();
-// console.log(projectsData);
-
-// (async function /*³*/ getProjectsList() {
-//   while (true) {
-//     await delay(10000);
-//     /*¹*/let projectsList = await getActiveProject(access_token, apiurl); /*²*/
-//     // setProjectList(projectsList);
-//     // console.log(projectsList);
-//   }
-// })();
-
-// while(true){
-//     projectList.then(()=>{
-//         console.log(projectList)
-//     }
-//     )
-// }
-
-// async function activeProjectsList(){
-//     // console.log(access_token);
-//     let t1= new Date();
-//     await getActiveProject(access_token,apiurl);
-//     setTimeout(activeProjectsList, Math.max(0, 1000 - new Date + t1));
-
-// }
-
-// activeProjectsList();
