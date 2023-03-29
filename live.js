@@ -155,7 +155,7 @@ async function getproxy(access_token_use, project_id_use, apiurl) {
       access_token: access_token_use,
       project_id: project_id_use,
     });
-    console.log("proxy",response.data);
+    console.log("proxy", response.data);
     return response.data;
     //   var response;
   } catch (error) {
@@ -163,21 +163,30 @@ async function getproxy(access_token_use, project_id_use, apiurl) {
   }
 }
 
-setIntervalAsync(async () => {
-  projectList = await getActiveProject(access_token, apiurl);
-  let jsonData = JSON.stringify(projectList);
+// async function getProjectstoData() {
+//   projectList = await getActiveProject(access_token, apiurl);
+//   let jsonData = JSON.stringify(projectList);
 
-  fs.writeFile("data.json", jsonData, (err) => {
-    if (err) throw err;
-    console.log("The file has been saved!");
-  });
-}, 5000);
+//   fs.writeFile("data.json", jsonData, (err) => {
+//     if (err) throw err;
+//     console.log("The file has been saved!");
+//   });
+// }
+// setIntervalAsync(async () => {
+//   projectList = await getActiveProject(access_token, apiurl);
+//   let jsonData = JSON.stringify(projectList);
 
-function readListFromFile(filePath) {
-  let jsonData = fs.readFileSync(filePath);
-  let data = JSON.parse(jsonData);
-  return data;
-}
+//   fs.writeFile("data.json", jsonData, (err) => {
+//     if (err) throw err;
+//     console.log("The file has been saved!");
+//   });
+// }, 5000);
+
+// function readListFromFile(filePath) {
+//   let jsonData = fs.readFileSync(filePath);
+//   let data = JSON.parse(jsonData);
+//   return data;
+// }
 
 async function taskProcess(task, access_token, proxy_url, args, apiurl) {
   if (task) {
@@ -333,13 +342,13 @@ async function mainWorker(access_token, project, proxy, apiurl) {
         }
         var args = {
           args: [`--proxy-server=${proxy_url}`, `--no-sandbox`],
-          headless: true,
+          headless: false,
         };
         console.log("Using Proxy....");
       } else {
         var args = {
           args: [`--no-sandbox`],
-          headless:true,
+          headless: false,
         };
       }
       var task = await getTaskData(project, access_token, apiurl);
@@ -354,34 +363,133 @@ async function mainWorker(access_token, project, proxy, apiurl) {
     }
   }
 }
-(async () => {
-  let projectsData = readListFromFile("data.json");
-  if(projectsData!==null){
-    for (let project of projectsData) {
-      var lop = true;
-      while (lop) {
-        // const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-        var [minDelay, maxDelay] = project.task_delay.split("-");
-        minDelay = parseInt(minDelay) * 1000;
-        maxDelay = parseInt(maxDelay) * 1000;
-        var task_delay = Math.floor(
+
+// (async () => {
+//   let projectsData = readListFromFile("data.json");
+//   if(projectsData!==null){
+//       // Keep track of the number of active workers
+//       let activeWorkers = 0;
+//       // Loop through projects
+//       while (true) {
+//           for (let project of projectsData) {
+//             console.log("running loop");
+//             console.log(activeWorkers)
+//               // Check if there are less than 4 active workers
+//                 console.log("running worker");
+//                   var [minDelay, maxDelay] = project.task_delay.split("-");
+//                   minDelay = parseInt(minDelay) * 1000;
+//                   maxDelay = parseInt(maxDelay) * 1000;
+//                   var task_delay = Math.floor(
+//                       Math.random() * (maxDelay - minDelay + 1) + minDelay
+//                   );
+//                   if (project) {
+//                     console.log("project found")
+//                       var proxy = await getproxy(access_token, project.id, apiurl);
+//                       if (proxy && proxy != "error") {
+//                         console.log("inside proxy")
+//                           // Increase active worker count
+//                           // activeWorkers++;
+//                           // Run the worker function and wait for it to complete
+//                           await mainWorker(access_token, project.id, proxy, apiurl)
+//                               .then(() => {
+//                                   // Decrease active worker count
+//                                   // activeWorkers--;
+//                                   // Sleep for the specified task delay
+//                                   delay(task_delay);
+//                               })
+//                               .catch((err) => {
+//                                   console.error(err);
+//                               });
+//                       }
+//                   }
+
+//           }
+//       }
+//   }
+// })();
+
+let runningProjects= new Set();
+async function runProject(project) {
+    if( runningProjects.has(project.id)){
+      console.log('starting project')
+      var [minDelay, maxDelay] = project.task_delay.split("-");
+      minDelay = parseInt(minDelay) * 1000;
+      maxDelay = parseInt(maxDelay) * 1000;
+      var task_delay = Math.floor(
           Math.random() * (maxDelay - minDelay + 1) + minDelay
-        );
-        if (project) {
-          var proxy = await getproxy(access_token, project.id, apiurl);
-          if (proxy && proxy != "error") {
-            let mainCall = await mainWorker(access_token, project.id, proxy, apiurl);
-            await Promise.all(Object.keys(mainCall));
-            await delay(task_delay);
-          }
-        }
-  
-        // Promise.all(maincall);
+      );
+      var proxy = await getproxy(access_token, project.id, apiurl);
+      if (proxy && proxy != "error") {
+          await mainWorker(access_token, project.id, proxy, apiurl);
+          setTimeout(() => runProject(project), task_delay);
       }
+    }else{
+      return;
+    }
+
+}
+
+
+(async () => {
+  while (true) {
+    // getProjectstoData();
+    // let projectsData = readListFromFile("data.json");
+    let projectsData =await getActiveProject(access_token, apiurl);
+    if (projectsData !== null) {
+        console.log('got project data');
+      // Keep track of the number of active workers
+      let newProjects = new Set(projectsData.map(project => project.id));
+      
+
+      runningProjects.forEach(proID => {
+        if (!newProjects.has(proID)) {
+            runningProjects.delete(proID);
+        }
+      });
+
+      for (let project of projectsData) {
+        console.log("lopping Project")
+        if(!runningProjects.has(project.id)){
+          console.log("iside project")
+          runningProjects.add(project.id);
+          runProject(project);
+        }
+        console.log(runningProjects)
+      }
+      await delay(1000);
+      // Wait for all the promises to resolve
     }
   }
-
 })();
+
+// (async () => {
+//   let projectsData = readListFromFile("data.json");
+//   if(projectsData!==null){
+//     for (let project of projectsData) {
+//       var lop = true;
+//       while (lop) {
+//         // const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+//         var [minDelay, maxDelay] = project.task_delay.split("-");
+//         minDelay = parseInt(minDelay) * 1000;
+//         maxDelay = parseInt(maxDelay) * 1000;
+//         var task_delay = Math.floor(
+//           Math.random() * (maxDelay - minDelay + 1) + minDelay
+//         );
+//         if (project) {
+//           var proxy = await getproxy(access_token, project.id, apiurl);
+//           if (proxy && proxy != "error") {
+//             let mainCall = await mainWorker(access_token, project.id, proxy, apiurl);
+//             await Promise.all(Object.keys(mainCall));
+//             await delay(task_delay);
+//           }
+//         }
+
+//         // Promise.all(maincall);
+//       }
+//     }
+//   }
+
+// })();
 // console.log(projectsData);
 
 // (async function /*³*/ getProjectsList() {
