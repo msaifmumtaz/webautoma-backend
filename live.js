@@ -209,6 +209,7 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
       var ua_obj = getUserAgent();
       const page = await browser.newPage();
       await page.setUserAgent(ua_obj.user_ag);
+      await page.setViewport({ width: 1920, height: 1080 });
       await page.goto(task.project_url, {
         waitUntil: "networkidle2",
       });
@@ -316,10 +317,7 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
         );
       }
       await page.waitForTimeout(5000);
-      // await page.screenshot({
-      //     path: task.task_id + '.png',
-      //     fullPage: true
-      // })
+
 
       // console.log(logs);
       await browser.close();
