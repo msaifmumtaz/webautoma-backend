@@ -223,7 +223,7 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
       });
       for (let d of task.task_data) {
         // console.log(d);
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(2000);
         if (d.device_type == ua_obj.device_type || d.device_type == "both") {
           switch (d.input_type) {
             case "input":
@@ -231,11 +231,15 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
               await page.type(d.selector, d.value).catch((err) => {
                 errors = d.input_select_name+err;
               });
+              console.log("input", d.input_select_name);
+              await page.waitForTimeout(1000);
               break;
             case "submit":
               await page.click(d.selector).catch((err) => {
                 errors = d.input_select_name+err;
               });
+              console.log("submit", d.input_select_name);
+              await page.waitForTimeout(1000);
               break;
             case "checkbox":
               await page
@@ -245,6 +249,8 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
                 .catch((err) => {
                   errors = d.input_select_name+err;
                 });
+              console.log("checkbox", d.input_select_name);
+              await page.waitForTimeout(1000);
               break;
             case "radiobtn":
               await page
@@ -254,16 +260,22 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
                 .catch((err) => {
                   errors = d.input_select_name+err;
                 });
+              console.log("radiobtn", d.input_select_name);
+              await page.waitForTimeout(1000);
               break;
             case "select":
               await page.select(d.selector, d.value).catch((err) => {
                 errors = d.input_select_name+err;
               });
+              console.log("select", d.input_select_name);
+              await page.waitForTimeout(1000);
               break;
             case "button":
               await page.click(d.selector).catch((err) => {
                 errors = d.input_select_name+err;
               });
+              console.log("button", d.input_select_name);
+              await page.waitForTimeout(1000);
               break;
             case "message":
               await page.waitForTimeout(15000);
@@ -303,7 +315,7 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
           apiurl
         );
       }
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(5000);
       // await page.screenshot({
       //     path: task.task_id + '.png',
       //     fullPage: true
