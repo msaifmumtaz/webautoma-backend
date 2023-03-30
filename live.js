@@ -199,6 +199,7 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
         access_token,
         "error",
         puperr.toString(),
+        "",
         task.task_id,
         apiurl
       );
@@ -228,12 +229,12 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
             case "input":
               // console.log(d.selector_type);
               await page.type(d.selector, d.value).catch((err) => {
-                errors = err;
+                errors = d.input_select_name+err;
               });
               break;
             case "submit":
               await page.click(d.selector).catch((err) => {
-                errors = err;
+                errors = d.input_select_name+err;
               });
               break;
             case "checkbox":
@@ -242,7 +243,7 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
                   clickCount: 1,
                 })
                 .catch((err) => {
-                  errors = err;
+                  errors = d.input_select_name+err;
                 });
               break;
             case "radiobtn":
@@ -251,17 +252,17 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
                   clickCount: 1,
                 })
                 .catch((err) => {
-                  errors = err;
+                  errors = d.input_select_name+err;
                 });
               break;
             case "select":
               await page.select(d.selector, d.value).catch((err) => {
-                errors = err;
+                errors = d.input_select_name+err;
               });
               break;
             case "button":
               await page.click(d.selector).catch((err) => {
-                errors = err;
+                errors = d.input_select_name+err;
               });
               break;
             case "message":
@@ -287,6 +288,7 @@ async function taskProcess(task, access_token, proxy_url, args, apiurl) {
           access_token,
           "error",
           errors.toString(),
+          "Task Completed With Errors.",
           task.task_id,
           apiurl
         );
